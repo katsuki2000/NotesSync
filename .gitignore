@@ -46,3 +46,5 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+Feuille_de_suivi_NotesSync.xlsx
