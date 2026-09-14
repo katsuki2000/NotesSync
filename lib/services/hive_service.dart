@@ -5,7 +5,8 @@ import '../models/note.dart';
 class HiveService {
   static const String boxName = 'notes_box';
 
-  Box<Map<dynamic, dynamic>> get _box => Hive.box<Map<dynamic, dynamic>>(boxName);
+  Box<Map<dynamic, dynamic>> get _box =>
+      Hive.box<Map<dynamic, dynamic>>(boxName);
 
   // Read all locally stored notes.
   List<Note> getNotes() {
