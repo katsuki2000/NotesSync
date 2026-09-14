@@ -1,16 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-import 'models/note.dart';
+import 'Services/hive_service.dart';
+import 'Services/auth_service.dart';
+import 'firebase_options.dart';
+import 'presentation/providers/notes_provider.dart';
+import 'presentation/providers/notes_sync_provider.dart';
+import 'presentation/providers/sync_providers.dart';
+import 'repositories/firestore_notes_repository.dart';
+import 'repositories/hive_notes_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialisation de Hive pour la tâche T-04
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  final authService = AuthService();
+  if (authService.currentUser == null) {
+    await authService.signInAnonymously();
+  }
   await Hive.initFlutter();
-  await Hive.openBox<Note>('notes_box');
+  await Hive.openBox<Map<dynamic, dynamic>>(HiveService.boxName);
 
-  runApp(const MyApp());
+  runApp(
+    ProviderScope(
+      overrides: [
+        authServiceProvider.overrideWithValue(authService),
+        notesRepositoryProvider.overrideWithValue(
+          HiveNotesRepository(HiveService()),
+        ),
+        remoteNotesRepositoryProvider.overrideWith(
+          (ref) => FirestoreNotesRepository(
+            firestoreService: ref.watch(firestoreSyncServiceProvider),
+            userId: ref.watch(authServiceProvider).currentUser!.uid,
+          ),
+        ),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
