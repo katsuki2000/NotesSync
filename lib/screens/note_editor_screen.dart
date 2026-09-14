@@ -1,10 +1,12 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/note.dart';
-import '../services/hive_service.dart';
+import '../presentation/widgets/theme_toggle_button.dart';
 
 abstract final class NotesSyncColors {
   static const Color lightBackground = Color(0xFFF8F9FC);
@@ -27,15 +29,15 @@ class NoteSyncStatusBadge extends StatelessWidget {
   String get label {
     switch (state) {
       case NoteSaveState.savedLocal:
-        return 'Enregistré localement';
+        return 'Saved locally';
       case NoteSaveState.synced:
-        return 'Synchronisé';
+        return 'Synced';
       case NoteSaveState.dirty:
-        return 'Modifications non enregistrées';
+        return 'Unsaved changes';
       case NoteSaveState.saving:
-        return 'Enregistrement…';
+        return 'Saving...';
       case NoteSaveState.error:
-        return 'Erreur de sauvegarde';
+        return 'Save failed';
     }
   }
 
@@ -95,11 +97,15 @@ class NoteSyncStatusBadge extends StatelessWidget {
           else
             Icon(icon, size: 15, color: color),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -151,49 +157,49 @@ class MarkdownToolbar extends StatelessWidget {
             children: [
               _ToolbarButton(
                 icon: Icons.format_bold_rounded,
-                tooltip: 'Gras',
+                tooltip: 'Bold',
                 onPressed: () => onAction(MarkdownToolbarAction.bold),
               ),
               _ToolbarButton(
                 icon: Icons.format_italic_rounded,
-                tooltip: 'Italique',
+                tooltip: 'Italic',
                 onPressed: () => onAction(MarkdownToolbarAction.italic),
               ),
               _ToolbarButton(
                 icon: Icons.title_rounded,
-                tooltip: 'Titre H1',
+                tooltip: 'Heading 1',
                 onPressed: () => onAction(MarkdownToolbarAction.h1),
               ),
               _ToolbarButton(
                 icon: Icons.text_fields_rounded,
-                tooltip: 'Titre H2',
+                tooltip: 'Heading 2',
                 onPressed: () => onAction(MarkdownToolbarAction.h2),
               ),
               const _ToolbarDivider(),
               _ToolbarButton(
                 icon: Icons.format_list_bulleted_rounded,
-                tooltip: 'Liste',
+                tooltip: 'List',
                 onPressed: () => onAction(MarkdownToolbarAction.bulletList),
               ),
               _ToolbarButton(
                 icon: Icons.format_list_numbered_rounded,
-                tooltip: 'Liste numérotée',
+                tooltip: 'Numbered list',
                 onPressed: () => onAction(MarkdownToolbarAction.numberedList),
               ),
               _ToolbarButton(
                 icon: Icons.check_box_outlined,
-                tooltip: 'Case à cocher',
+                tooltip: 'Task list',
                 onPressed: () => onAction(MarkdownToolbarAction.task),
               ),
               const _ToolbarDivider(),
               _ToolbarButton(
                 icon: Icons.data_object_rounded,
-                tooltip: 'Bloc de code',
+                tooltip: 'Code block',
                 onPressed: () => onAction(MarkdownToolbarAction.codeBlock),
               ),
               _ToolbarButton(
                 icon: Icons.link_rounded,
-                tooltip: 'Lien',
+                tooltip: 'Link',
                 onPressed: () => onAction(MarkdownToolbarAction.link),
               ),
             ],
@@ -244,8 +250,15 @@ class _ToolbarButton extends StatelessWidget {
 }
 
 class NoteEditorScreen extends StatefulWidget {
-  const NoteEditorScreen({super.key, this.note});
+  const NoteEditorScreen({
+    super.key,
+    this.note,
+    required this.onSave,
+    this.onPreview,
+  });
   final Note? note;
+  final Future<void> Function(Note) onSave;
+  final ValueChanged<Note>? onPreview;
 
   @override
   State<NoteEditorScreen> createState() => _NoteEditorScreenState();
@@ -256,7 +269,12 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
   late final TextEditingController _contentController;
   late final FocusNode _titleFocus;
   late final FocusNode _contentFocus;
-  final HiveService _hiveService = HiveService();
+  late Note _draft;
+  late String _savedTitle;
+  late String _savedContent;
+  Future<void>? _pendingSave;
+  bool _allowPop = false;
+  bool _closing = false;
 
   bool _isPreview = false;
   NoteSaveState _saveState = NoteSaveState.savedLocal;
@@ -265,6 +283,18 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now().toUtc();
+    _draft =
+        widget.note ??
+        Note(
+          id: '${now.microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}',
+          title: '',
+          content: '',
+          createdAt: now,
+          updatedAt: now,
+        );
+    _savedTitle = _draft.title;
+    _savedContent = _draft.content;
     _titleController = TextEditingController(text: widget.note?.title ?? '');
     _contentController = TextEditingController(
       text: widget.note?.content ?? '',
@@ -295,43 +325,57 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
 
   void _onTitleChanged() {
     if (!mounted) return;
-    if (_titleController.text != (widget.note?.title ?? '')) _markDirty();
+    if (_titleController.text != _savedTitle) _markDirty();
   }
 
   void _onContentChanged() {
     if (!mounted) return;
-    if (_contentController.text != (widget.note?.content ?? '')) _markDirty();
+    if (_contentController.text != _savedContent) _markDirty();
   }
 
   void _markDirty() {
-    if (_saveState == NoteSaveState.dirty) return;
+    if (_saveState == NoteSaveState.dirty ||
+        _saveState == NoteSaveState.saving) {
+      return;
+    }
     setState(() => _saveState = NoteSaveState.dirty);
   }
 
-  Future<void> _saveNote() async {
-    if (_saveState == NoteSaveState.saving) return;
+  Note _currentNote() => _draft.copyWith(
+    title: _titleController.text.trim().isEmpty
+        ? 'Untitled'
+        : _titleController.text.trim(),
+    content: _contentController.text,
+    updatedAt: DateTime.now().toUtc(),
+    isSynced: false,
+  );
 
+  Future<void> _saveNote() =>
+      _pendingSave ??= _performSave().whenComplete(() => _pendingSave = null);
+
+  Future<void> _performSave() async {
     setState(() => _saveState = NoteSaveState.saving);
 
     try {
-      final title = _titleController.text.trim();
+      final title = _titleController.text;
       final content = _contentController.text;
+      if (content.isEmpty) {
+        throw const FormatException('Write some content before saving.');
+      }
 
-      final noteToSave = Note(
-        id: widget.note?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        title: title.isEmpty ? 'Sans titre' : title,
-        content: content,
-        createdAt: widget.note?.createdAt ?? DateTime.now(),
-        updatedAt: DateTime.now(),
-        isSynced: false,
-      );
-
-      await _hiveService.saveNote(noteToSave);
+      final noteToSave = _currentNote();
+      await widget.onSave(noteToSave);
 
       if (!mounted) return;
 
       setState(() {
-        _saveState = NoteSaveState.savedLocal;
+        _draft = noteToSave;
+        _savedTitle = title;
+        _savedContent = content;
+        _saveState =
+            _titleController.text == title && _contentController.text == content
+            ? NoteSaveState.savedLocal
+            : NoteSaveState.dirty;
         _saveAnimationKey++;
       });
 
@@ -344,10 +388,37 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Impossible d’enregistrer la note localement.'),
-          action: SnackBarAction(label: 'Réessayer', onPressed: _saveNote),
+          content: Text(
+            error is FormatException
+                ? error.message
+                : 'Unable to save the note locally.',
+          ),
+          action: SnackBarAction(label: 'Retry', onPressed: _saveNote),
         ),
       );
+    }
+  }
+
+  Future<void> _close() async {
+    if (_closing) return;
+    _closing = true;
+    try {
+      if (_pendingSave != null ||
+          _saveState == NoteSaveState.dirty ||
+          _saveState == NoteSaveState.error) {
+        await _saveNote();
+      }
+      if (!mounted ||
+          _saveState == NoteSaveState.error ||
+          _saveState == NoteSaveState.dirty) {
+        return;
+      }
+      setState(() => _allowPop = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.of(context).pop();
+      });
+    } finally {
+      _closing = false;
     }
   }
 
@@ -427,7 +498,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
       current.selection.start,
       current.selection.end,
     );
-    final String label = selectedText.isEmpty ? 'texte du lien' : selectedText;
+    final String label = selectedText.isEmpty ? 'link text' : selectedText;
     final int start = current.selection.start;
     final int end = current.selection.end;
     final String replacement = '[$label](https://example.com)';
@@ -451,14 +522,14 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         _insertMarkdown(
           before: '**',
           after: '**',
-          placeholder: 'texte en gras',
+          placeholder: 'bold text',
           moveCursorInside: true,
         );
       case MarkdownToolbarAction.italic:
         _insertMarkdown(
           before: '*',
           after: '*',
-          placeholder: 'texte en italique',
+          placeholder: 'italic text',
           moveCursorInside: true,
         );
       case MarkdownToolbarAction.h1:
@@ -475,7 +546,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         _insertMarkdown(
           before: '```\n',
           after: '\n```',
-          placeholder: 'votre code',
+          placeholder: 'your code',
           moveCursorInside: true,
         );
       case MarkdownToolbarAction.link:
@@ -556,17 +627,17 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     final Uri? uri = Uri.tryParse(href);
     if (uri == null) return;
 
-    // On extrait le context AVANT toute action
+    // Capture presentation dependencies before launching the URL.
     final messenger = ScaffoldMessenger.of(context);
     final errorColor = Theme.of(context).colorScheme.error;
 
-    // On utilise .then() au lieu de async/await pour contourner le linter
+    // Check widget lifetime before showing the asynchronous result.
     launchUrl(uri, mode: LaunchMode.externalApplication).then((launched) {
       if (!mounted) return;
       if (!launched) {
         messenger.showSnackBar(
           SnackBar(
-            content: const Text('Impossible d’ouvrir ce lien.'),
+            content: const Text('Unable to open this link.'),
             backgroundColor: errorColor.withValues(alpha: 0.95),
           ),
         );
@@ -578,68 +649,88 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        toolbarHeight: 72,
-        leadingWidth: 64,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 12),
-          child: IconButton.filledTonal(
-            tooltip: 'Fermer',
-            onPressed: () async {
-              if (_saveState == NoteSaveState.dirty) await _saveNote();
-              // C'EST ICI LE SECRET : context.mounted au lieu de mounted
-              if (context.mounted) Navigator.of(context).pop();
-            },
-            icon: const Icon(Icons.arrow_back_rounded, size: 20),
-          ),
-        ),
-        titleSpacing: 8,
-        title: NoteSyncStatusBadge(state: _saveState),
-        actions: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            child: FilledButton.icon(
-              key: ValueKey('save_$_saveAnimationKey'),
-              onPressed: _saveState == NoteSaveState.saving ? null : _saveNote,
-              icon: const Icon(Icons.save_rounded, size: 18),
-              label: const Text('Enregistrer'),
+    return PopScope<void>(
+      canPop: _allowPop,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _close();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          toolbarHeight: 72,
+          leadingWidth: 64,
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: IconButton.filledTonal(
+              tooltip: 'Back to notes',
+              onPressed: _close,
+              icon: const Icon(Icons.arrow_back_rounded, size: 20),
             ),
           ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            _EditorModeSwitcher(
-              isPreview: _isPreview,
-              onChanged: (bool value) {
-                setState(() => _isPreview = value);
-                if (!value) {
-                  _contentFocus.requestFocus();
-                } else {
-                  _contentFocus.unfocus();
-                  _titleFocus.unfocus();
-                }
-              },
-            ),
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 260),
-                child: _isPreview
-                    ? _buildPreview(context)
-                    : _buildEditor(context, isDark),
+          titleSpacing: 8,
+          title: NoteSyncStatusBadge(state: _saveState),
+          actions: [
+            if (widget.onPreview != null)
+              IconButton(
+                tooltip: 'Open preview',
+                onPressed: () => widget.onPreview!(_currentNote()),
+                icon: const Icon(Icons.open_in_full),
               ),
-            ),
+            const ThemeToggleButton(),
+            if (MediaQuery.sizeOf(context).width < 520)
+              IconButton(
+                tooltip: 'Save',
+                onPressed: _saveState == NoteSaveState.saving
+                    ? null
+                    : _saveNote,
+                icon: const Icon(Icons.save_outlined),
+              )
+            else
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                child: FilledButton.icon(
+                  key: ValueKey('save_$_saveAnimationKey'),
+                  onPressed: _saveState == NoteSaveState.saving
+                      ? null
+                      : _saveNote,
+                  icon: const Icon(Icons.save_rounded, size: 18),
+                  label: const Text('Save'),
+                ),
+              ),
+            const SizedBox(width: 8),
           ],
         ),
+        body: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              _EditorModeSwitcher(
+                isPreview: _isPreview,
+                onChanged: (bool value) {
+                  setState(() => _isPreview = value);
+                  if (!value) {
+                    _contentFocus.requestFocus();
+                  } else {
+                    _contentFocus.unfocus();
+                    _titleFocus.unfocus();
+                  }
+                },
+              ),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 260),
+                  child: _isPreview
+                      ? _buildPreview(context)
+                      : _buildEditor(context, isDark),
+                ),
+              ),
+            ],
+          ),
+        ),
+        bottomNavigationBar: !_isPreview
+            ? MarkdownToolbar(onAction: _handleToolbarAction)
+            : null,
       ),
-      bottomNavigationBar: !_isPreview
-          ? MarkdownToolbar(onAction: _handleToolbarAction)
-          : null,
     );
   }
 
@@ -658,7 +749,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
               style: Theme.of(context).textTheme.headlineMedium
                   ?.copyWith(fontWeight: FontWeight.bold),
               decoration: const InputDecoration(
-                hintText: 'Titre de la note',
+                hintText: 'Note title',
                 border: InputBorder.none,
               ),
               maxLines: null,
@@ -690,7 +781,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                   style: Theme.of(context).textTheme.bodyLarge
                       ?.copyWith(fontSize: 17, height: 1.72),
                   decoration: const InputDecoration(
-                    hintText: 'Commencez à écrire en Markdown…\n\nAstuce : utilisez la barre d’outils ci-dessous.',
+                    hintText: 'Start writing in Markdown...\n\nTip: use the toolbar below.',
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.all(18),
                   ),
@@ -722,7 +813,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
               ),
             MarkdownBody(
               data: _contentController.text.trim().isEmpty
-                  ? '_Aucun contenu pour le moment._'
+                  ? '_No content yet._'
                   : _contentController.text,
               selectable: true,
               softLineBreak: true,
@@ -760,7 +851,7 @@ class _EditorModeSwitcher extends StatelessWidget {
           children: [
             Expanded(
               child: _ModeButton(
-                label: 'Écrire',
+                label: 'Write',
                 icon: Icons.edit_rounded,
                 selected: !isPreview,
                 onTap: () => onChanged(false),
@@ -768,7 +859,7 @@ class _EditorModeSwitcher extends StatelessWidget {
             ),
             Expanded(
               child: _ModeButton(
-                label: 'Aperçu',
+                label: 'Preview',
                 icon: Icons.visibility_rounded,
                 selected: isPreview,
                 onTap: () => onChanged(true),

@@ -1,5 +1,5 @@
 import '../models/note.dart';
-import '../Services/hive_service.dart';
+import '../services/hive_service.dart';
 import 'notes_repository.dart';
 
 /// Adapts the Hive storage service to the shared notes repository contract.

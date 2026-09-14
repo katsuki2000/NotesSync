@@ -29,16 +29,14 @@ class FirestoreNotesRepository implements NotesRepository {
 
   @override
   Future<void> saveNote(Note note) => _firestoreService.uploadNote(
-        userId: _userId,
-        noteId: note.id,
-        noteData: note.toFirestore(),
-      );
+    userId: _userId,
+    noteId: note.id,
+    noteData: note.toFirestore(),
+  );
 
   @override
-  Future<void> deleteNote(String id) => _firestoreService.deleteNote(
-        userId: _userId,
-        noteId: id,
-      );
+  Future<void> deleteNote(String id) =>
+      _firestoreService.deleteNote(userId: _userId, noteId: id);
 
   @override
   Stream<List<Note>> watchNotes() => const Stream<List<Note>>.empty();

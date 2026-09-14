@@ -15,7 +15,9 @@ final localNotesRepositoryProvider = Provider<NotesRepository>((ref) {
 final remoteNotesRepositoryProvider = Provider<NotesRepository>((ref) {
   final user = ref.watch(authServiceProvider).currentUser;
   if (user == null) {
-    throw StateError('A signed-in user is required for Firestore synchronization.');
+    throw StateError(
+      'A signed-in user is required for Firestore synchronization.',
+    );
   }
   return FirestoreNotesRepository(
     firestoreService: ref.watch(firestoreSyncServiceProvider),
