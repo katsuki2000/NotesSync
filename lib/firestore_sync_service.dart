@@ -3,12 +3,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class FirestoreSyncService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Référence vers la collection des notes d'un utilisateur spécifique
+  // Reference the notes collection for one user.
   CollectionReference<Map<String, dynamic>> _userNotesRef(String userId) {
     return _firestore.collection('users').doc(userId).collection('notes');
   }
 
-  // UPLOAD : Envoyer ou mettre à jour une note sur Firestore
+  // Upload or update a note in Firestore.
   Future<void> uploadNote({
     required String userId,
     required String noteId,
@@ -19,21 +19,21 @@ class FirestoreSyncService {
           .doc(noteId)
           .set(noteData, SetOptions(merge: true));
     } catch (e) {
-      throw Exception('Erreur lors de la synchronisation vers Firestore: $e');
+      throw Exception('Failed to upload note to Firestore: $e');
     }
   }
 
-  // DOWNLOAD : Récupérer toutes les notes distantes d'un utilisateur
+  // Download all notes for one user.
   Future<List<Map<String, dynamic>>> downloadNotes(String userId) async {
     try {
       final snapshot = await _userNotesRef(userId).get();
-      return snapshot.docs.map((doc) => doc.data()).toList();
+      return snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList();
     } catch (e) {
-      throw Exception('Erreur lors du téléchargement depuis Firestore: $e');
+      throw Exception('Failed to download notes from Firestore: $e');
     }
   }
 
-  // DELETE : Supprimer une note distante
+  // Delete a note from Firestore.
   Future<void> deleteNote({
     required String userId,
     required String noteId,
@@ -41,7 +41,7 @@ class FirestoreSyncService {
     try {
       await _userNotesRef(userId).doc(noteId).delete();
     } catch (e) {
-      throw Exception('Erreur lors de la suppression sur Firestore: $e');
+      throw Exception('Failed to delete note from Firestore: $e');
     }
   }
 }
