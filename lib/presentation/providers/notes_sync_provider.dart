@@ -2,7 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
 import '../../application/services/notes_sync_service.dart';
+import '../../repositories/firestore_notes_repository.dart';
 import '../../repositories/notes_repository.dart';
+import 'sync_providers.dart';
 import 'notes_provider.dart';
 
 /// Uses the same local repository as the notes presentation state.
@@ -10,9 +12,15 @@ final localNotesRepositoryProvider = Provider<NotesRepository>((ref) {
   return ref.watch(notesRepositoryProvider);
 });
 
-/// Override this provider with the remote repository at the app root.
 final remoteNotesRepositoryProvider = Provider<NotesRepository>((ref) {
-  throw StateError('A remote NotesRepository must be provided.');
+  final user = ref.watch(authServiceProvider).currentUser;
+  if (user == null) {
+    throw StateError('A signed-in user is required for Firestore synchronization.');
+  }
+  return FirestoreNotesRepository(
+    firestoreService: ref.watch(firestoreSyncServiceProvider),
+    userId: user.uid,
+  );
 });
 
 final notesSyncServiceProvider = Provider<NotesSyncService>((ref) {
