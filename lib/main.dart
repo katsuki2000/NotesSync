@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-import 'Services/auth_service.dart';
+import 'services/auth_service.dart';
 import 'services/hive_service.dart';
 import 'domain/models/theme_preference.dart';
 import 'firebase_options.dart';

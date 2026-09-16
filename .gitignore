@@ -52,3 +52,4 @@ Feuille_de_suivi_NotesSync.xlsx
 tools/firestore_rules/node_modules/
 **/firebase-debug.log
 **/firestore-debug.log
+devtools_options.yaml
