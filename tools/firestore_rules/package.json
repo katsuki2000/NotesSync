@@ -1,0 +1,13 @@
+{
+  "name": "notessync-firestore-rules-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "firebase emulators:exec --config ../../firebase.json --project demo-notessync --only firestore \"node --test theme_rules.test.mjs\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "firebase": "^12.19.0",
+    "firebase-tools": "^15.30.1"
+  }
+}
