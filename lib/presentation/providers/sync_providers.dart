@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:notessync/Services/auth_service.dart';
-import 'package:notessync/firestore_sync_service.dart';
+import 'package:notessync/services/auth_service.dart';
+import 'package:notessync/services/firestore_sync_service.dart';
 
 // Provider pour AuthService
 final authServiceProvider = Provider<AuthService>((ref) {

@@ -1,4 +1,4 @@
-import '../firestore_sync_service.dart';
+import '../services/firestore_sync_service.dart';
 import '../models/note.dart';
 import 'notes_repository.dart';
 
