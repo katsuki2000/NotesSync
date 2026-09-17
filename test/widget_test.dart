@@ -157,18 +157,12 @@ void main() {
         await tester.pumpAndSettle();
       }
       expect(find.byType(NoteEditorScreen), findsOneWidget);
-      expect(
-        find.text('Write some content before saving.'),
-        findsOneWidget,
-      );
+      expect(find.text('Write some content before saving.'), findsOneWidget);
       await tester.enterText(find.byType(TextField).last, 'Now has content');
       await tester.tap(find.byTooltip('Back to notes'));
       await tester.pumpAndSettle();
       expect(find.byType(NoteListScreen), findsOneWidget);
-      expect(
-        find.text('Write some content before saving.'),
-        findsNothing,
-      );
+      expect(find.text('Write some content before saving.'), findsNothing);
     },
   );
 

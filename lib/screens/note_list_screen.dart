@@ -46,10 +46,7 @@ class NoteListScreen extends ConsumerWidget {
             if (isGuest) ...[
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.secondaryContainer,
                   borderRadius: BorderRadius.circular(12),
@@ -66,7 +63,9 @@ class NoteListScreen extends ConsumerWidget {
                     Text(
                       'Guest',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSecondaryContainer,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSecondaryContainer,
                       ),
                     ),
                   ],
@@ -114,14 +113,18 @@ class NoteListScreen extends ConsumerWidget {
                           Icon(
                             Icons.note_alt_outlined,
                             size: 64,
-                            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+                            color: Theme.of(context).colorScheme.outline
+                                .withValues(alpha: 0.5),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'No notes yet. Create your first note.',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                            style: Theme.of(context).textTheme.bodyLarge
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
                           ),
                         ],
                       ),
@@ -209,17 +212,17 @@ class NoteListScreen extends ConsumerWidget {
                                   ],
                                 ],
                               ),
-                              onTap: () => Navigator.of(context).pushNamed(
-                                NoteRoutes.editor,
-                                arguments: note,
-                              ),
+                              onTap: () => Navigator.of(
+                                context,
+                              ).pushNamed(NoteRoutes.editor, arguments: note),
                               trailing: IconButton(
                                 tooltip: 'Preview note',
                                 icon: const Icon(Icons.visibility_outlined),
-                                onPressed: () => Navigator.of(context).pushNamed(
-                                  NoteRoutes.preview,
-                                  arguments: NotePreviewArguments(note),
-                                ),
+                                onPressed: () => Navigator.of(context)
+                                    .pushNamed(
+                                      NoteRoutes.preview,
+                                      arguments: NotePreviewArguments(note),
+                                    ),
                               ),
                             ),
                           );

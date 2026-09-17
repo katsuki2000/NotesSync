@@ -67,21 +67,21 @@ void main() {
       authService = AuthService(auth: mockAuth);
     });
 
-    test('signInAnonymously returns a UserCredential for an anonymous user', () async {
-      final credential = await authService.signInAnonymously();
+    test(
+      'signInAnonymously returns a UserCredential for an anonymous user',
+      () async {
+        final credential = await authService.signInAnonymously();
 
-      expect(credential.user, isNotNull);
-      expect(credential.user!.isAnonymous, isTrue);
-      expect(authService.currentUser, isNotNull);
-    });
+        expect(credential.user, isNotNull);
+        expect(credential.user!.isAnonymous, isTrue);
+        expect(authService.currentUser, isNotNull);
+      },
+    );
 
     test(
       'signInWithEmailAndPassword succeeds for a pre-registered user',
       () async {
-        final existingUser = MockUser(
-          uid: 'uid-1',
-          email: 'maha@example.com',
-        );
+        final existingUser = MockUser(uid: 'uid-1', email: 'maha@example.com');
         mockAuth = MockFirebaseAuth(mockUser: existingUser);
         authService = AuthService(auth: mockAuth);
 
@@ -99,9 +99,7 @@ void main() {
       () async {
         whenCalling(Invocation.method(#signInWithEmailAndPassword, null))
             .on(mockAuth)
-            .thenThrow(
-              FirebaseAuthException(code: 'invalid-credential'),
-            );
+            .thenThrow(FirebaseAuthException(code: 'invalid-credential'));
 
         await expectLater(
           authService.signInWithEmailAndPassword(
@@ -128,27 +126,28 @@ void main() {
       expect(credential.user?.email, 'new-user@example.com');
     });
 
-    test('signUpWithEmailAndPassword translates email-already-in-use', () async {
-      whenCalling(Invocation.method(#createUserWithEmailAndPassword, null))
-          .on(mockAuth)
-          .thenThrow(
-            FirebaseAuthException(code: 'email-already-in-use'),
-          );
+    test(
+      'signUpWithEmailAndPassword translates email-already-in-use',
+      () async {
+        whenCalling(Invocation.method(#createUserWithEmailAndPassword, null))
+            .on(mockAuth)
+            .thenThrow(FirebaseAuthException(code: 'email-already-in-use'));
 
-      await expectLater(
-        authService.signUpWithEmailAndPassword(
-          email: 'taken@example.com',
-          password: 'p@ssw0rd',
-        ),
-        throwsA(
-          isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('An account already exists'),
+        await expectLater(
+          authService.signUpWithEmailAndPassword(
+            email: 'taken@example.com',
+            password: 'p@ssw0rd',
           ),
-        ),
-      );
-    });
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('An account already exists'),
+            ),
+          ),
+        );
+      },
+    );
 
     test('sendPasswordResetEmail completes without throwing', () async {
       await expectLater(

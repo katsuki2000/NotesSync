@@ -26,9 +26,7 @@ class SyncButton extends ConsumerWidget {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : Icon(
-              sync.hasError
-                  ? Icons.sync_problem_rounded
-                  : Icons.sync_rounded,
+              sync.hasError ? Icons.sync_problem_rounded : Icons.sync_rounded,
             ),
     );
   }

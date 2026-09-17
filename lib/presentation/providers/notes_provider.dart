@@ -58,9 +58,7 @@ class NotesNotifier extends StateNotifier<AsyncValue<List<Note>>> {
         // Les tombstones (deletedAt != null) restent en stockage pour que
         // NotesSyncService puisse propager la suppression à l'autre
         // replica, mais ne doivent jamais apparaître dans l'UI.
-        return List<Note>.unmodifiable(
-          notes.where((note) => !note.isDeleted),
-        );
+        return List<Note>.unmodifiable(notes.where((note) => !note.isDeleted));
       });
 
       if (mounted) {
