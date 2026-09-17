@@ -14,7 +14,7 @@ void main() {
 
   for (final entry in factories.entries) {
     test(
-      '${entry.key} publishes initial, saved, updated, and deleted snapshots',
+      '${entry.key} publishes initial, saved, and updated snapshots',
       () async {
         final repository = entry.value();
         addTearDown(repository.dispose);
@@ -26,16 +26,33 @@ void main() {
             [],
             [note],
             [updated],
-            [],
           ]),
         );
 
         await repository.saveNote(note);
         await repository.saveNote(updated);
         expect(await repository.getNoteById(note.id), updated);
-        await repository.deleteNote(note.id);
-        expect(await repository.getNoteById(note.id), isNull);
         await observed;
+      },
+    );
+
+    test(
+      '${entry.key} deleteNote writes a tombstone instead of removing the record',
+      () async {
+        final repository = entry.value();
+        addTearDown(repository.dispose);
+        final note = makeNote();
+
+        await repository.saveNote(note);
+        await repository.deleteNote(note.id);
+
+        // Still retrievable at the repository level — it's the caller
+        // (e.g. notesProvider) that hides tombstones from the UI, so
+        // NotesSyncService can still see and propagate the deletion.
+        final tombstone = await repository.getNoteById(note.id);
+        expect(tombstone, isNotNull);
+        expect(tombstone!.isDeleted, isTrue);
+        expect(tombstone.deletedAt, isNotNull);
       },
     );
 

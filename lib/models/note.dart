@@ -10,7 +10,8 @@ class NoteSerializationException implements Exception {
   const NoteSerializationException(this.message, [this.cause]);
 
   @override
-  String toString() => 'NoteSerializationException: $message'
+  String toString() =>
+      'NoteSerializationException: $message'
       '${cause != null ? ' (cause: $cause)' : ''}';
 }
 
@@ -32,7 +33,9 @@ class Note {
   final List<String> tags;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final bool isSynced; // true si la version locale est synchronisée avec Firestore
+  final bool
+  isSynced; // true si la version locale est synchronisée avec Firestore
+  final DateTime? deletedAt; // tombstone : non-null si la note a été supprimée
 
   const Note({
     required this.id,
@@ -42,7 +45,12 @@ class Note {
     required this.createdAt,
     required this.updatedAt,
     this.isSynced = false,
+    this.deletedAt,
   });
+
+  /// true si la note est un tombstone (supprimée mais conservée pour la
+  /// propagation de la suppression entre replicas — voir NotesSyncService).
+  bool get isDeleted => deletedAt != null;
 
   /// Crée une copie de la note avec certains champs modifiés.
   Note copyWith({
@@ -53,6 +61,8 @@ class Note {
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isSynced,
+    DateTime? deletedAt,
+    bool clearDeletedAt = false,
   }) {
     return Note(
       id: id ?? this.id,
@@ -62,6 +72,7 @@ class Note {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isSynced: isSynced ?? this.isSynced,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
     );
   }
 
@@ -78,6 +89,7 @@ class Note {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'isSynced': isSynced,
+      'deletedAt': deletedAt?.toIso8601String(),
     };
   }
 
@@ -101,7 +113,14 @@ class Note {
       final createdAt = _parseDate(map['createdAt'], 'createdAt');
       final updatedAt = _parseDate(map['updatedAt'], 'updatedAt');
 
-      final isSynced = map['isSynced'] is bool ? map['isSynced'] as bool : false;
+      final isSynced = map['isSynced'] is bool
+          ? map['isSynced'] as bool
+          : false;
+
+      final rawDeletedAt = map['deletedAt'];
+      final deletedAt = rawDeletedAt == null
+          ? null
+          : _parseDate(rawDeletedAt, 'deletedAt');
 
       return Note(
         id: id,
@@ -111,6 +130,7 @@ class Note {
         createdAt: createdAt,
         updatedAt: updatedAt,
         isSynced: isSynced,
+        deletedAt: deletedAt,
       );
     } on NoteSerializationException {
       rethrow;
@@ -215,19 +235,21 @@ class Note {
         _listEquals(other.tags, tags) &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt &&
-        other.isSynced == isSynced;
+        other.isSynced == isSynced &&
+        other.deletedAt == deletedAt;
   }
 
   @override
   int get hashCode => Object.hash(
-        id,
-        title,
-        content,
-        Object.hashAll(tags),
-        createdAt,
-        updatedAt,
-        isSynced,
-      );
+    id,
+    title,
+    content,
+    Object.hashAll(tags),
+    createdAt,
+    updatedAt,
+    isSynced,
+    deletedAt,
+  );
 
   static bool _listEquals(List<String> a, List<String> b) {
     if (a.length != b.length) return false;

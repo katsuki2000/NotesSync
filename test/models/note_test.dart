@@ -34,21 +34,23 @@ void main() {
       expect(map['createdAt'], sample.createdAt.toIso8601String());
     });
 
-    test('fromMap applique les valeurs par défaut (tags vides, isSynced false)',
-        () {
-      final minimal = {
-        'id': 'note-2',
-        'title': 'Note minimale',
-        'content': 'contenu',
-        'createdAt': DateTime.utc(2026, 1, 1).toIso8601String(),
-        'updatedAt': DateTime.utc(2026, 1, 1).toIso8601String(),
-      };
+    test(
+      'fromMap applique les valeurs par défaut (tags vides, isSynced false)',
+      () {
+        final minimal = {
+          'id': 'note-2',
+          'title': 'Note minimale',
+          'content': 'contenu',
+          'createdAt': DateTime.utc(2026, 1, 1).toIso8601String(),
+          'updatedAt': DateTime.utc(2026, 1, 1).toIso8601String(),
+        };
 
-      final note = Note.fromMap(minimal);
+        final note = Note.fromMap(minimal);
 
-      expect(note.tags, isEmpty);
-      expect(note.isSynced, isFalse);
-    });
+        expect(note.tags, isEmpty);
+        expect(note.isSynced, isFalse);
+      },
+    );
   });
 
   group('Note - sérialisation Firestore', () {
@@ -174,6 +176,65 @@ void main() {
       } on NoteSerializationException catch (e) {
         expect(e.message, contains('title'));
       }
+    });
+  });
+
+  group('Note - comportements de repli (fallback) volontaires', () {
+    // Contrairement à id/title/content, tags et isSynced ne sont pas des
+    // champs strictement requis : un type inattendu ne doit pas faire
+    // planter la désérialisation, mais retomber sur une valeur par défaut
+    // sûre. Ces tests documentent ce choix pour qu'il ne soit pas confondu
+    // plus tard avec un oubli de validation.
+
+    test(
+      'tags avec un type invalide (non-List) retombe sur une liste vide',
+      () {
+        final map = {
+          'id': 'note-10',
+          'title': 'Titre',
+          'content': 'Contenu',
+          'tags': 'flutter,markdown', // String au lieu d'une List
+          'createdAt': DateTime.utc(2026, 1, 1).toIso8601String(),
+          'updatedAt': DateTime.utc(2026, 1, 1).toIso8601String(),
+        };
+
+        final note = Note.fromMap(map);
+
+        expect(note.tags, isEmpty);
+      },
+    );
+
+    test(
+      'tags contenant des éléments non-String sont convertis via toString()',
+      () {
+        final map = {
+          'id': 'note-11',
+          'title': 'Titre',
+          'content': 'Contenu',
+          'tags': [1, true, 'flutter'],
+          'createdAt': DateTime.utc(2026, 1, 1).toIso8601String(),
+          'updatedAt': DateTime.utc(2026, 1, 1).toIso8601String(),
+        };
+
+        final note = Note.fromMap(map);
+
+        expect(note.tags, ['1', 'true', 'flutter']);
+      },
+    );
+
+    test('isSynced avec un type invalide retombe sur false', () {
+      final map = {
+        'id': 'note-12',
+        'title': 'Titre',
+        'content': 'Contenu',
+        'isSynced': 'oui', // String au lieu d'un bool
+        'createdAt': DateTime.utc(2026, 1, 1).toIso8601String(),
+        'updatedAt': DateTime.utc(2026, 1, 1).toIso8601String(),
+      };
+
+      final note = Note.fromMap(map);
+
+      expect(note.isSynced, isFalse);
     });
   });
 

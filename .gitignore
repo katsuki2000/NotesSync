@@ -48,3 +48,8 @@ app.*.map.json
 .widget_preview/
 
 Feuille_de_suivi_NotesSync.xlsx
+# Local Firestore rules test dependencies and emulator logs.
+tools/firestore_rules/node_modules/
+**/firebase-debug.log
+**/firestore-debug.log
+devtools_options.yaml

@@ -4,9 +4,14 @@ import '../../repositories/notes_repository.dart';
 
 /// Merges local and remote snapshots without depending on Flutter or Riverpod.
 ///
-/// Missing notes are copied, not treated as deletions: the repository contract
-/// has no tombstones. External edits must not overlap a synchronization pass;
-/// atomic compare-and-set writes require a stronger repository contract.
+/// Notes missing on one replica are copied from the other — this is correct
+/// for genuinely new notes never seen there, and also for deletions: since
+/// repositories now write a deletedAt tombstone instead of removing the
+/// record (see HiveNotesRepository/FirestoreNotesRepository.deleteNote), a
+/// deleted note is never actually "missing", it's just resolved like any
+/// other update via NoteConflictResolver and propagated as a tombstone.
+/// External edits must not overlap a synchronization pass; atomic
+/// compare-and-set writes require a stronger repository contract.
 class NotesSyncService {
   NotesSyncService({
     required NotesRepository localRepository,
