@@ -175,14 +175,45 @@ void main() {
   });
 
   test(
-    'missing notes are restored because deletion tombstones are absent',
+    'a local deletion propagates to the remote replica as a tombstone',
     () async {
       await local.saveNote(makeNote());
       await service.synchronize();
-      await local.deleteNote('note-1');
+      expect((await remote.getNoteById('note-1'))!.isDeleted, isFalse);
 
+      await local.deleteNote('note-1');
       await service.synchronize();
-      expect(await local.getNoteById('note-1'), makeNote(isSynced: true));
+
+      final remoteAfter = await remote.getNoteById('note-1');
+      expect(remoteAfter!.isDeleted, isTrue);
+      expect(remoteAfter.deletedAt, isNotNull);
+    },
+  );
+
+  test(
+    'a remote deletion propagates back to the local replica as a tombstone',
+    () async {
+      await remote.saveNote(makeNote());
+      await service.synchronize();
+
+      await remote.deleteNote('note-1');
+      await service.synchronize();
+
+      final localAfter = await local.getNoteById('note-1');
+      expect(localAfter!.isDeleted, isTrue);
+    },
+  );
+
+  test(
+    'a genuinely new note (never deleted) is still copied across, not confused with a tombstone',
+    () async {
+      final localNote = makeNote(id: 'brand-new');
+      await local.saveNote(localNote);
+
+      final result = await service.synchronize();
+
+      expect(result.single.isDeleted, isFalse);
+      expect((await remote.getNoteById('brand-new'))!.isDeleted, isFalse);
     },
   );
 

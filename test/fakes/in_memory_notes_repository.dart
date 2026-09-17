@@ -57,10 +57,18 @@ abstract class InMemoryNotesRepository implements NotesRepository {
     _changes.add(_snapshot());
   }
 
+  /// Mirrors the real repositories: soft-delete via a deletedAt tombstone
+  /// instead of physically removing the record, so this fake stays
+  /// representative of HiveNotesRepository/FirestoreNotesRepository.
   @override
   Future<void> deleteNote(String id) async {
     _checkWrite();
-    _notes.remove(id);
+    final existing = _notes[id];
+    if (existing == null) return;
+    final now = DateTime.now().toUtc();
+    _notes[id] = _copy(
+      existing.copyWith(deletedAt: now, updatedAt: now, isSynced: false),
+    );
     _changes.add(_snapshot());
   }
 

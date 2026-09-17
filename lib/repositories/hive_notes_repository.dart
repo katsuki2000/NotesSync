@@ -20,8 +20,20 @@ class HiveNotesRepository implements NotesRepository {
   @override
   Future<void> saveNote(Note note) => _hiveService.saveNote(_userId, note);
 
+  /// Suppression douce (tombstone) : la note n'est pas retirée du stockage,
+  /// elle est marquée deletedAt=now et réécrite. Ça permet à
+  /// NotesSyncService de propager la suppression vers l'autre replica au
+  /// lieu de la recréer (voir note_conflict_resolver.dart / synchronize()).
   @override
-  Future<void> deleteNote(String id) => _hiveService.deleteNote(_userId, id);
+  Future<void> deleteNote(String id) async {
+    final existing = _hiveService.getNoteById(_userId, id);
+    if (existing == null) return;
+    final now = DateTime.now().toUtc();
+    await _hiveService.saveNote(
+      _userId,
+      existing.copyWith(deletedAt: now, updatedAt: now, isSynced: false),
+    );
+  }
 
   @override
   Stream<List<Note>> watchNotes() => const Stream<List<Note>>.empty();

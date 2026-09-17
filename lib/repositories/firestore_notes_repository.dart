@@ -34,9 +34,15 @@ class FirestoreNotesRepository implements NotesRepository {
     noteData: note.toFirestore(),
   );
 
+  /// Suppression douce (tombstone), même logique que HiveNotesRepository —
+  /// voir son commentaire pour le pourquoi.
   @override
-  Future<void> deleteNote(String id) =>
-      _firestoreService.deleteNote(userId: _userId, noteId: id);
+  Future<void> deleteNote(String id) async {
+    final existing = await getNoteById(id);
+    if (existing == null) return;
+    final now = DateTime.now().toUtc();
+    await saveNote(existing.copyWith(deletedAt: now, updatedAt: now, isSynced: false));
+  }
 
   @override
   Stream<List<Note>> watchNotes() => const Stream<List<Note>>.empty();
