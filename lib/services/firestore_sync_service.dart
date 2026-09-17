@@ -33,7 +33,11 @@ class FirestoreSyncService {
     }
   }
 
-  // Delete a note from Firestore.
+  // Unused since the soft-delete fix (17/09): FirestoreNotesRepository now
+  // writes a deletedAt tombstone via saveNote() instead of calling this, so
+  // NotesSyncService can propagate deletions instead of resurrecting notes.
+  // Kept for now — ping Mahalahatse if you're not sure why. See git history
+  // (fix: soft-delete tombstones) for the full context.
   Future<void> deleteNote({
     required String userId,
     required String noteId,
