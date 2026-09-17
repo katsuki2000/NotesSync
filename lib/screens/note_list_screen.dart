@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../presentation/navigation/note_routes.dart';
 import '../presentation/providers/notes_provider.dart';
+import '../presentation/providers/notes_sync_provider.dart';
 import '../presentation/providers/sync_providers.dart';
 import '../presentation/providers/theme_provider.dart';
 import '../presentation/widgets/theme_toggle_button.dart';
@@ -127,7 +128,7 @@ class NoteListScreen extends ConsumerWidget {
                     )
                   : RefreshIndicator(
                       onRefresh: () =>
-                          ref.read(notesProvider.notifier).loadNotes(),
+                          ref.read(notesSyncProvider.notifier).synchronize(),
                       child: ListView.builder(
                         physics: const AlwaysScrollableScrollPhysics(),
                         itemCount: items.length,
