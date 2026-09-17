@@ -28,6 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isSignUp = false;
   bool _isSubmitting = false;
+  bool _obscurePassword = true;
   String? _error;
 
   @override
@@ -133,12 +134,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextField(
                     key: const ValueKey('login_password_field'),
                     controller: _passwordController,
-                    obscureText: true,
+                    obscureText: _obscurePassword,
                     textInputAction: TextInputAction.done,
                     onSubmitted: (_) => _submit(),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Password',
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        key: const ValueKey('login_password_visibility_toggle'),
+                        tooltip: _obscurePassword
+                            ? 'Show password'
+                            : 'Hide password',
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                        ),
+                        onPressed: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
+                      ),
                     ),
                   ),
                   if (!_isSignUp)
