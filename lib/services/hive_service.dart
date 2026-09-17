@@ -39,11 +39,6 @@ class HiveService {
     await _box.put(_key(userId, note.id), note.toMap());
   }
 
-  // Delete a locally stored note, for one account.
-  Future<void> deleteNote(String userId, String id) async {
-    await _box.delete(_key(userId, id));
-  }
-
   // Clear every note belonging to one account.
   Future<void> clearAll(String userId) async {
     final keys = _box.keys.where((key) => _belongsTo(userId, key)).toList();
