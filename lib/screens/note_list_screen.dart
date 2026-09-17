@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../presentation/navigation/note_routes.dart';
 import '../presentation/providers/notes_provider.dart';
+import '../presentation/providers/sync_providers.dart';
 import '../presentation/providers/theme_provider.dart';
 import '../presentation/widgets/theme_toggle_button.dart';
 
@@ -16,7 +17,14 @@ class NoteListScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('NotesSync'),
-        actions: const [ThemeToggleButton()],
+        actions: [
+          const ThemeToggleButton(),
+          IconButton(
+            tooltip: 'Sign out',
+            onPressed: () => ref.read(authServiceProvider).signOut(),
+            icon: const Icon(Icons.logout_outlined),
+          ),
+        ],
       ),
       body: Column(
         children: [
