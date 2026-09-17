@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:notessync/main.dart';
 import 'package:notessync/presentation/providers/notes_provider.dart';
+import 'package:notessync/presentation/providers/sync_providers.dart';
 import 'package:notessync/presentation/providers/theme_provider.dart';
 import 'package:notessync/screens/note_editor_screen.dart';
 import 'package:notessync/screens/note_list_screen.dart';
@@ -30,6 +31,9 @@ void main() {
         FakeRemoteThemeRepository(),
       ),
       themeUserIdProvider.overrideWithValue(null),
+      // AuthGate is now the app's home widget: without this, it would try
+      // to reach real Firebase auth and show LoginScreen instead.
+      isSignedInProvider.overrideWithValue(true),
     ],
     child: const MyApp(),
   );
