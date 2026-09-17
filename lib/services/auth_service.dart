@@ -14,7 +14,7 @@ class AuthService {
     try {
       return await _auth.signInAnonymously();
     } on FirebaseAuthException catch (e) {
-      throw Exception('Erreur de connexion anonyme: ${e.message}');
+      throw Exception('Anonymous sign-in error: ${e.message}');
     }
   }
 
@@ -29,7 +29,7 @@ class AuthService {
         password: password,
       );
     } on FirebaseAuthException catch (e) {
-      throw Exception('Erreur de connexion: ${e.message}');
+      throw Exception('Sign-in error: ${e.message}');
     }
   }
 
@@ -44,7 +44,7 @@ class AuthService {
         password: password,
       );
     } on FirebaseAuthException catch (e) {
-      throw Exception('Erreur d\'inscription: ${e.message}');
+      throw Exception('Sign-up error: ${e.message}');
     }
   }
 
