@@ -34,6 +34,10 @@ void main() {
       // AuthGate is now the app's home widget: without this, it would try
       // to reach real Firebase auth and show LoginScreen instead.
       isSignedInProvider.overrideWithValue(true),
+      // Same reasoning: NoteListScreen watches this for the guest badge and
+      // sign-in/out icon, and it also touches authServiceProvider (real
+      // Firebase) if left to its default definition.
+      isAnonymousProvider.overrideWithValue(false),
     ],
     child: const MyApp(),
   );

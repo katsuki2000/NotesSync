@@ -28,6 +28,22 @@ final isSignedInProvider = Provider<bool>((ref) {
       );
 });
 
+/// True while the current session is an anonymous ("guest") account — one
+/// with no email/password or Google identity attached. Used to show a
+/// guest indicator and offer "sign in" rather than "sign out" in the UI,
+/// since ending an anonymous session discards it rather than merely
+/// pausing it.
+final isAnonymousProvider = Provider<bool>((ref) {
+  return ref
+      .watch(authStateProvider)
+      .when(
+        data: (user) => user?.isAnonymous ?? false,
+        loading: () =>
+            ref.watch(authServiceProvider).currentUser?.isAnonymous ?? false,
+        error: (error, stackTrace) => false,
+      );
+});
+
 // Provider pour FirestoreSyncService
 final firestoreSyncServiceProvider = Provider<FirestoreSyncService>((ref) {
   return FirestoreSyncService();
