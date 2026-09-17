@@ -98,6 +98,11 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(ref.read(themeProvider.notifier).synchronize());
+      try {
+        unawaited(ref.read(notesSyncProvider.notifier).synchronize());
+      } catch (_) {
+        // notesSyncProvider throws if no user is signed in yet.
+      }
     }
   }
 
