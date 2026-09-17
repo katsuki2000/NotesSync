@@ -7,6 +7,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'services/auth_service.dart';
 import 'services/hive_service.dart';
+import 'services/secure_key_service.dart';
 import 'domain/models/theme_preference.dart';
 import 'firebase_options.dart';
 import 'presentation/navigation/notes_router.dart';
@@ -21,9 +22,21 @@ import 'repositories/hive_theme_repository.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
-  await Hive.openBox<Map<dynamic, dynamic>>(HiveService.boxName);
+
+  // Notes and theme preferences are stored locally on the device, so both
+  // boxes are encrypted at rest with an AES-256 key that lives only in
+  // platform secure storage (Keychain / Keystore), never inside the box
+  // itself. See SecureKeyService for details.
+  final encryptionKey = await SecureKeyService().getEncryptionKey();
+  final cipher = HiveAesCipher(encryptionKey);
+
+  await Hive.openBox<Map<dynamic, dynamic>>(
+    HiveService.boxName,
+    encryptionCipher: cipher,
+  );
   final themeBox = await Hive.openBox<Map<dynamic, dynamic>>(
     HiveThemeRepository.boxName,
+    encryptionCipher: cipher,
   );
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final authService = AuthService();
