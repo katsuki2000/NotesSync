@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 /// Pure widget: every Firebase call is injected as a callback (wired by
 /// [AuthGate]), so it can be tested without touching Firebase at all —
@@ -105,6 +106,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Center(
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        Icons.edit_note_rounded,
+                        size: 32,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
                   Text(
                     'NotesSync',
                     textAlign: TextAlign.center,
@@ -127,6 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       labelText: 'Email',
+                      prefixIcon: Icon(Icons.mail_outline_rounded),
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -139,6 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onSubmitted: (_) => _submit(),
                     decoration: InputDecoration(
                       labelText: 'Password',
+                      prefixIcon: const Icon(Icons.lock_outline_rounded),
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         key: const ValueKey('login_password_visibility_toggle'),
@@ -204,15 +223,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: _isSubmitting
                         ? null
                         : () => _guard(widget.onSignInWithGoogle),
-                    icon: const Icon(Icons.g_mobiledata, size: 28),
+                    icon: const FaIcon(FontAwesomeIcons.google, size: 18),
                     label: const Text('Sign in with Google'),
                   ),
                   const SizedBox(height: 8),
-                  OutlinedButton(
+                  OutlinedButton.icon(
                     onPressed: _isSubmitting
                         ? null
                         : () => _guard(widget.onContinueAsGuest),
-                    child: const Text('Continue without an account'),
+                    icon: const Icon(Icons.person_outline_rounded, size: 20),
+                    label: const Text('Continue without an account'),
                   ),
                 ],
               ),
