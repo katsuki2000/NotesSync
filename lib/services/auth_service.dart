@@ -2,9 +2,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
+  AuthService({FirebaseAuth? auth}) : _authOverride = auth;
+
+  final FirebaseAuth? _authOverride;
+
   // `late` so constructing AuthService (e.g. a test subclass overriding
   // every member) never touches Firebase unless a real method runs.
-  late final FirebaseAuth _auth = FirebaseAuth.instance;
+  late final FirebaseAuth _auth = _authOverride ?? FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   bool _googleSignInReady = false;
 
