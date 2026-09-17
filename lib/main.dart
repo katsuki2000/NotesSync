@@ -51,9 +51,13 @@ Future<void> main() async {
         localThemeRepositoryProvider.overrideWithValue(
           HiveThemeRepository(themeBox),
         ),
-        notesRepositoryProvider.overrideWithValue(
-          HiveNotesRepository(HiveService()),
-        ),
+        notesRepositoryProvider.overrideWith((ref) {
+          final user = ref.watch(authStateProvider).asData?.value;
+          if (user == null) {
+            throw StateError('Sign in before accessing local notes.');
+          }
+          return HiveNotesRepository(HiveService(), user.uid);
+        }),
         remoteNotesRepositoryProvider.overrideWith((ref) {
           final user = ref.watch(authStateProvider).asData?.value;
           if (user == null) {

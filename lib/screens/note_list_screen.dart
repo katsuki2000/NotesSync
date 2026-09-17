@@ -10,19 +10,65 @@ import '../presentation/widgets/theme_toggle_button.dart';
 class NoteListScreen extends ConsumerWidget {
   const NoteListScreen({super.key});
 
+  Future<bool> _confirmDelete(BuildContext context, String title) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete note?'),
+        content: Text('"$title" will be permanently deleted.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notes = ref.watch(notesProvider);
     final theme = ref.watch(themeProvider);
+    final isGuest = ref.watch(isAnonymousProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('NotesSync'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('NotesSync'),
+            if (isGuest) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Guest',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
         actions: [
           const ThemeToggleButton(),
           IconButton(
-            tooltip: 'Sign out',
+            tooltip: isGuest ? 'Sign in' : 'Sign out',
             onPressed: () => ref.read(authServiceProvider).signOut(),
-            icon: const Icon(Icons.logout_outlined),
+            icon: Icon(isGuest ? Icons.login_outlined : Icons.logout_outlined),
           ),
         ],
       ),
@@ -60,22 +106,43 @@ class NoteListScreen extends ConsumerWidget {
                         itemCount: items.length,
                         itemBuilder: (context, index) {
                           final note = items[index];
-                          return ListTile(
+                          return Dismissible(
                             key: ValueKey(note.id),
-                            title: Text(note.title),
-                            subtitle: Text(
-                              note.content,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              color: Theme.of(context).colorScheme.error,
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              child: Icon(
+                                Icons.delete_outline,
+                                color: Theme.of(context).colorScheme.onError,
+                              ),
                             ),
-                            onTap: () => Navigator.of(context)
-                                .pushNamed(NoteRoutes.editor, arguments: note),
-                            trailing: IconButton(
-                              tooltip: 'Preview note',
-                              icon: const Icon(Icons.visibility_outlined),
-                              onPressed: () => Navigator.of(context).pushNamed(
-                                NoteRoutes.preview,
-                                arguments: NotePreviewArguments(note),
+                            confirmDismiss: (_) =>
+                                _confirmDelete(context, note.title),
+                            onDismissed: (_) => ref
+                                .read(notesProvider.notifier)
+                                .deleteNote(note.id),
+                            child: ListTile(
+                              title: Text(note.title),
+                              subtitle: Text(
+                                note.content,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              onTap: () => Navigator.of(context).pushNamed(
+                                NoteRoutes.editor,
+                                arguments: note,
+                              ),
+                              trailing: IconButton(
+                                tooltip: 'Preview note',
+                                icon: const Icon(Icons.visibility_outlined),
+                                onPressed: () => Navigator.of(context).pushNamed(
+                                  NoteRoutes.preview,
+                                  arguments: NotePreviewArguments(note),
+                                ),
                               ),
                             ),
                           );

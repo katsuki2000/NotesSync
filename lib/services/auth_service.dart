@@ -18,6 +18,36 @@ class AuthService {
     _googleSignInReady = true;
   }
 
+  // Turns a FirebaseAuthException's technical code into a short sentence a
+  // user can act on. Projects created after Sept 2023 have email enumeration
+  // protection enabled by default, so Firebase merges "wrong password" and
+  // "no such user" into the single generic `invalid-credential` code (to
+  // avoid revealing which emails have an account) — surfacing e.message raw
+  // for that code shows confusing text like "malformed or has expired",
+  // which reads like a bug rather than "check your email/password".
+  String _readableAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-credential':
+      case 'user-not-found':
+      case 'wrong-password':
+        return 'Incorrect email or password.';
+      case 'invalid-email':
+        return 'That email address doesn\'t look valid.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
+      case 'email-already-in-use':
+        return 'An account already exists for this email.';
+      case 'weak-password':
+        return 'Choose a stronger password (at least 6 characters).';
+      case 'too-many-requests':
+        return 'Too many attempts. Please wait a moment and try again.';
+      case 'network-request-failed':
+        return 'Network error. Check your connection and try again.';
+      default:
+        return e.message ?? 'Something went wrong. Please try again.';
+    }
+  }
+
   // Obtenir l'utilisateur actuel
   User? get currentUser => _auth.currentUser;
 
@@ -29,7 +59,7 @@ class AuthService {
     try {
       return await _auth.signInAnonymously();
     } on FirebaseAuthException catch (e) {
-      throw Exception('Anonymous sign-in error: ${e.message}');
+      throw Exception(_readableAuthError(e));
     }
   }
 
@@ -44,7 +74,7 @@ class AuthService {
         password: password,
       );
     } on FirebaseAuthException catch (e) {
-      throw Exception('Sign-in error: ${e.message}');
+      throw Exception(_readableAuthError(e));
     }
   }
 
@@ -59,7 +89,7 @@ class AuthService {
         password: password,
       );
     } on FirebaseAuthException catch (e) {
-      throw Exception('Sign-up error: ${e.message}');
+      throw Exception(_readableAuthError(e));
     }
   }
 
@@ -68,7 +98,7 @@ class AuthService {
     try {
       await _auth.sendPasswordResetEmail(email: email);
     } on FirebaseAuthException catch (e) {
-      throw Exception('Password reset error: ${e.message}');
+      throw Exception(_readableAuthError(e));
     }
   }
 
@@ -83,7 +113,7 @@ class AuthService {
     } on GoogleSignInException catch (e) {
       throw Exception('Google sign-in error: ${e.description ?? e.code}');
     } on FirebaseAuthException catch (e) {
-      throw Exception('Google sign-in error: ${e.message}');
+      throw Exception(_readableAuthError(e));
     }
   }
 
