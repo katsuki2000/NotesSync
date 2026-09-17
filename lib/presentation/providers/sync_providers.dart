@@ -13,6 +13,26 @@ final authStateProvider = StreamProvider((ref) {
   return authService.authStateChanges;
 });
 
+/// The current Firebase user's uid, or null if signed out.
+///
+/// Same data/loading/error derivation as isSignedInProvider and
+/// isAnonymousProvider — do not read authStateProvider.asData?.value
+/// directly elsewhere: during the stream's initial AsyncLoading state
+/// (e.g. right after a fresh sign-in, before authStateChanges has
+/// delivered its first event) that returns null even when a user is
+/// already available synchronously via authServiceProvider.currentUser,
+/// which previously made notesRepositoryProvider throw on a freshly
+/// signed-in session.
+final currentUserIdProvider = Provider<String?>((ref) {
+  return ref
+      .watch(authStateProvider)
+      .when(
+        data: (user) => user?.uid,
+        loading: () => ref.watch(authServiceProvider).currentUser?.uid,
+        error: (error, stackTrace) => null,
+      );
+});
+
 /// True once a Firebase user (anonymous or not) is available.
 ///
 /// Mirrors themeUserIdProvider's own derivation (data/loading/error) from

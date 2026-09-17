@@ -52,20 +52,20 @@ Future<void> main() async {
           HiveThemeRepository(themeBox),
         ),
         notesRepositoryProvider.overrideWith((ref) {
-          final user = ref.watch(authStateProvider).asData?.value;
-          if (user == null) {
+          final uid = ref.watch(currentUserIdProvider);
+          if (uid == null) {
             throw StateError('Sign in before accessing local notes.');
           }
-          return HiveNotesRepository(HiveService(), user.uid);
+          return HiveNotesRepository(HiveService(), uid);
         }),
         remoteNotesRepositoryProvider.overrideWith((ref) {
-          final user = ref.watch(authStateProvider).asData?.value;
-          if (user == null) {
+          final uid = ref.watch(currentUserIdProvider);
+          if (uid == null) {
             throw StateError('Sign in before synchronizing notes.');
           }
           return FirestoreNotesRepository(
             firestoreService: ref.watch(firestoreSyncServiceProvider),
-            userId: user.uid,
+            userId: uid,
           );
         }),
       ],
