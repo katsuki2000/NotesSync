@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:notessync/main.dart';
 import 'package:notessync/presentation/providers/notes_provider.dart';
+import 'package:notessync/presentation/providers/notes_sync_provider.dart';
 import 'package:notessync/presentation/providers/sync_providers.dart';
 import 'package:notessync/presentation/providers/theme_provider.dart';
 import 'package:notessync/screens/note_editor_screen.dart';
@@ -10,6 +11,7 @@ import 'package:notessync/screens/note_list_screen.dart';
 import 'package:notessync/screens/note_preview_screen.dart';
 
 import 'fakes/fake_local_repository.dart';
+import 'fakes/fake_remote_repository.dart';
 import 'fakes/fake_theme_repositories.dart';
 import 'fakes/note_fixture.dart';
 
@@ -26,6 +28,9 @@ void main() {
   Widget app() => ProviderScope(
     overrides: [
       notesRepositoryProvider.overrideWithValue(notes),
+      // SyncButton watches notesSyncProvider unconditionally as soon as
+      // NoteListScreen builds, which would otherwise reach real Firebase.
+      remoteNotesRepositoryProvider.overrideWithValue(FakeRemoteRepository()),
       localThemeRepositoryProvider.overrideWithValue(theme),
       remoteThemeRepositoryProvider.overrideWithValue(
         FakeRemoteThemeRepository(),
