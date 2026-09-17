@@ -386,7 +386,8 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
       setState(() => _saveState = NoteSaveState.error);
 
       // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
+      final messenger = ScaffoldMessenger.of(context)..clearSnackBars();
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             error is FormatException
@@ -414,6 +415,10 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         return;
       }
       setState(() => _allowPop = true);
+      // Drop any lingering error SnackBar (e.g. from an earlier failed
+      // attempt) so it doesn't bleed into whatever screen this pops to —
+      // ScaffoldMessenger is shared app-wide, not scoped to this route.
+      ScaffoldMessenger.of(context).clearSnackBars();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) Navigator.of(context).pop();
       });

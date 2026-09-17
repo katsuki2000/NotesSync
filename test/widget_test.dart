@@ -116,6 +116,9 @@ void main() {
       expect(find.byType(NoteListScreen), findsOneWidget);
       expect((await notes.getNotes()).single.content, 'Unsaved edit');
       expect((await notes.getNotes()).single.tags, ['test']);
+      // Regression: the error SnackBar from the first failed attempt must
+      // not bleed into the list screen once the retry succeeds and pops.
+      expect(find.text('Unable to save the note locally.'), findsNothing);
     },
   );
 
@@ -134,6 +137,35 @@ void main() {
     expect(find.byType(NoteListScreen), findsOneWidget);
     expect(find.byType(NotePreviewScreen), findsNothing);
   });
+
+  testWidgets(
+    'repeated failed save attempts do not queue duplicate SnackBars',
+    (tester) async {
+      await tester.pumpWidget(app());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Create note'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'Empty note');
+      // Content left empty on purpose — _close() keeps refusing to pop.
+      for (var i = 0; i < 3; i++) {
+        await tester.tap(find.byTooltip('Back to notes'));
+        await tester.pumpAndSettle();
+      }
+      expect(find.byType(NoteEditorScreen), findsOneWidget);
+      expect(
+        find.text('Write some content before saving.'),
+        findsOneWidget,
+      );
+      await tester.enterText(find.byType(TextField).last, 'Now has content');
+      await tester.tap(find.byTooltip('Back to notes'));
+      await tester.pumpAndSettle();
+      expect(find.byType(NoteListScreen), findsOneWidget);
+      expect(
+        find.text('Write some content before saving.'),
+        findsNothing,
+      );
+    },
+  );
 
   testWidgets('theme toggle updates every route and survives an app rebuild', (
     tester,
