@@ -82,7 +82,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
       setState(
-        () => _error = 'Enter your email above, then tap "Forgot password?" again.',
+        () => _error =
+            'Enter your email above, then tap "Forgot password?" again.',
       );
       return;
     }

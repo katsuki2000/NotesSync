@@ -41,7 +41,9 @@ class FirestoreNotesRepository implements NotesRepository {
     final existing = await getNoteById(id);
     if (existing == null) return;
     final now = DateTime.now().toUtc();
-    await saveNote(existing.copyWith(deletedAt: now, updatedAt: now, isSynced: false));
+    await saveNote(
+      existing.copyWith(deletedAt: now, updatedAt: now, isSynced: false),
+    );
   }
 
   @override

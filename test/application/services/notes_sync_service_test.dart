@@ -204,18 +204,15 @@ void main() {
     },
   );
 
-  test(
-    'a genuinely new note (never deleted) is still copied across, not confused with a tombstone',
-    () async {
-      final localNote = makeNote(id: 'brand-new');
-      await local.saveNote(localNote);
+  test('a genuinely new note (never deleted) is still copied across, not confused with a tombstone', () async {
+    final localNote = makeNote(id: 'brand-new');
+    await local.saveNote(localNote);
 
-      final result = await service.synchronize();
+    final result = await service.synchronize();
 
-      expect(result.single.isDeleted, isFalse);
-      expect((await remote.getNoteById('brand-new'))!.isDeleted, isFalse);
-    },
-  );
+    expect(result.single.isDeleted, isFalse);
+    expect((await remote.getNoteById('brand-new'))!.isDeleted, isFalse);
+  });
 
   test('resolver rejects different identifiers', () {
     expect(

@@ -10,7 +10,8 @@ class NoteSerializationException implements Exception {
   const NoteSerializationException(this.message, [this.cause]);
 
   @override
-  String toString() => 'NoteSerializationException: $message'
+  String toString() =>
+      'NoteSerializationException: $message'
       '${cause != null ? ' (cause: $cause)' : ''}';
 }
 
@@ -32,7 +33,8 @@ class Note {
   final List<String> tags;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final bool isSynced; // true si la version locale est synchronisée avec Firestore
+  final bool
+  isSynced; // true si la version locale est synchronisée avec Firestore
   final DateTime? deletedAt; // tombstone : non-null si la note a été supprimée
 
   const Note({
@@ -111,7 +113,9 @@ class Note {
       final createdAt = _parseDate(map['createdAt'], 'createdAt');
       final updatedAt = _parseDate(map['updatedAt'], 'updatedAt');
 
-      final isSynced = map['isSynced'] is bool ? map['isSynced'] as bool : false;
+      final isSynced = map['isSynced'] is bool
+          ? map['isSynced'] as bool
+          : false;
 
       final rawDeletedAt = map['deletedAt'];
       final deletedAt = rawDeletedAt == null
@@ -237,15 +241,15 @@ class Note {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        title,
-        content,
-        Object.hashAll(tags),
-        createdAt,
-        updatedAt,
-        isSynced,
-        deletedAt,
-      );
+    id,
+    title,
+    content,
+    Object.hashAll(tags),
+    createdAt,
+    updatedAt,
+    isSynced,
+    deletedAt,
+  );
 
   static bool _listEquals(List<String> a, List<String> b) {
     if (a.length != b.length) return false;
