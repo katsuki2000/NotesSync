@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "715490931280",
+    "project_id": "notessync-94cdd",
+    "storage_bucket": "notessync-94cdd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:715490931280:android:a526858d0a43042971d755",
+        "android_client_info": {
+          "package_name": "com.example.notessync"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "715490931280-6pav2tvch6tvhom83uj6kfl37siv2hq4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.notessync",
+            "certificate_hash": "6c8d535c8bce3d67e85930061ecf673440f9b60e"
+          }
+        },
+        {
+          "client_id": "715490931280-ippg2g4eftlbm60cq7a66i1k5el4vv1v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.notessync",
+            "certificate_hash": "0d246f77eb6eca7da4d612d4009499cbf702a7ac"
+          }
+        },
+        {
+          "client_id": "715490931280-psq6q4soqhh5b36bq8amu88hvtqs7uds.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqlz-_zHb2TS3ASe3pn8xxtD1Ii4Z1tK4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "715490931280-psq6q4soqhh5b36bq8amu88hvtqs7uds.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "715490931280-6oe1dqm1s7mbpr69rqnul6ngdp2iu6tn.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.notessync"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
